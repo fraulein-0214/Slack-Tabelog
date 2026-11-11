@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>ごはん検索</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="referrer" content="no-referrer" />
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        background: #fff;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #111;
+        }
+      }
+      iframe {
+        display: block;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 「This application was created by a Google Apps Script user」の帯は、GASの画面を直接開いたときだけ出る。
+     このページの中に埋め込んで開くと出ない。 -->
+    <iframe id="app" title="ごはん検索" allow="geolocation"></iframe>
+    <noscript>このページはJavaScriptが必要です。</noscript>
+    <script>
+      // ★ここだけ書き換える: GASのウェブアプリのURL(…/exec)
+      var GAS_URL =
+        "https://script.google.com/macros/s/AKfycbzC4Cch5CZVW4mh4lnSl5fO7OFHirqDGhljq_IfqOdrKXyz-1FXhaJswTVM0JSsJ2r8/exec";
+
+      // このページのURLに付いた「?go=…」などは、そのままGASへ渡す(Slackのリンクを、このページに向けても動く)
+      document.getElementById("app").src = GAS_URL + location.search;
+    </script>
+  </body>
+</html>

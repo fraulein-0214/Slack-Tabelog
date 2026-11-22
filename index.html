@@ -44,6 +44,63 @@
 
       // このページのURLに付いた「?go=…」などは、そのままGASへ渡す(Slackのリンクを、このページに向けても動く)
       document.getElementById("app").src = GAS_URL + location.search;
+
+      // 位置情報の橋渡し: 入れ子のGASの画面の中では、ブラウザが位置情報を止めることがある(特にスマホ)。
+      // いちばん外のこのページで位置を取り、GASの画面へ渡す。許可を求められるのは、このページ(github.io)。
+      window.addEventListener("message", function (ev) {
+        var d = ev.data;
+        // GASの画面(script.google.com / *.googleusercontent.com)からの依頼だけを受ける
+        var ok = ev.origin === "https://script.google.com" || /^https:\/\/[a-z0-9.-]+\.googleusercontent\.com$/.test(ev.origin);
+        if (!ok || !d || !ev.source) return;
+        var say = function (m) {
+          ev.source.postMessage(m, ev.origin);
+        };
+        if (d.type === "tabelog-geo-hello") {
+          say({ type: "tabelog-geo-ack", id: d.id });
+          return;
+        }
+        if (d.type === "tabelog-geo-perm") {
+          // 位置情報が許可済みかだけを答える(許可の確認は出さない)
+          var send = function (g) {
+            say({ type: "tabelog-geo-perm-result", id: d.id, granted: g });
+          };
+          try {
+            if (navigator.permissions && navigator.permissions.query) {
+              navigator.permissions.query({ name: "geolocation" }).then(
+                function (st) {
+                  send(st.state === "granted");
+                },
+                function () {
+                  send(false);
+                }
+              );
+            } else send(false);
+          } catch (e) {
+            send(false);
+          }
+          return;
+        }
+        if (d.type !== "tabelog-geo") return;
+        var reply = function (m) {
+          m.type = "tabelog-geo-result";
+          m.id = d.id;
+          say(m);
+        };
+        if (!navigator.geolocation) return reply({ ok: false, code: 2 });
+        navigator.geolocation.getCurrentPosition(
+          function (p) {
+            reply({ ok: true, lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy });
+          },
+          function (e) {
+            reply({ ok: false, code: e.code });
+          },
+          {
+            enableHighAccuracy: !!(d.o && d.o.enableHighAccuracy),
+            timeout: (d.o && d.o.timeout) || 15000,
+            maximumAge: (d.o && d.o.maximumAge) || 0,
+          }
+        );
+      });
     </script>
   </body>
 </html>
